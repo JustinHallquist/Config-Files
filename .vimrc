@@ -1,8 +1,62 @@
 """"""
+" Vundle
+""""""
+" Required for Vundle.
+set nocompatible
+" Separate file for Vundle packages
+source $HOME/.vim/vundle.vim
+
+" Enable filetype detection and filetype specific settings.
+filetype on
+filetype indent on
+filetype plugin on
+
+" Show hidden files in Ctrl-P
+let g:ctrlp_show_hidden = 1
+
+" Ignore files in .gitignore
+let g:ctrlp_user_command = ['.git/', 'git --git-dir=%s/.git ls-files -oc --exclude-standard']
+
+"""""
+" Plugin Aliases
+""""
+" Rename current file (courtesy of Gary Bernhardt)
+function! RenameFile()
+  let old_name = expand('%')
+  let new_name = input('New file name: ', expand('%'), 'file')
+  if new_name != '' && new_name != old_name
+    exec ':saveas ' . new_name
+    exec ':silent !rm ' . old_name
+    redraw!
+  endif
+endfunction
+map <Leader>n :call RenameFile()<cr>
+map <Leader>m :CtrlPTag<cr>
+
+set wildignore+=*.o,tmp
+
+"""""
+" Aliases
+"""""
+cabbr <expr> MyVundle expand('~/.vim/vundle.vim')
+command! EBashRC e ~/.bashrc
+command! EVundle e ~/.vim/vundle.vim
+command! EVimRC e $MYVIMRC
+
+" From https://github.com/tpope/vim-sensible/blob/master/plugin/sensible.vim
+" Use <C-L> to clear the highlighting of :set hlsearch.
+if maparg('<C-L>', 'n') ==# ''
+  nnoremap <silent> <C-L> :nohlsearch<CR><C-L>
+endif
+
+""""""
 " Display
 """"""
+" Enables syntax highlighting
+syntax enable
 " Shows line numbers
-set number
+"set number
+set relativenumber
 "Highlight cursor line and column
 set cursorline
 set cursorcolumn
@@ -19,10 +73,13 @@ set hlsearch
 set ignorecase smartcase
 "Show commands as I type them.
 set showcmd
-"Highlight to-do notes
-highlight Todo ctermfg=darkgrey ctermbg=yellow
-"Sets spellcheck on
-set spell spelllang=en_us
+"Displays a column at 80 characters
+set colorcolumn=80
+"Sets fold method
+set foldmethod=indent
+set foldnestmax=10
+set nofoldenable
+set foldlevel=2
 
 """
 " Functionality
@@ -32,13 +89,13 @@ set title
 "Allows backspacing over everything
 set backspace=indent,eol,start
 "Make all swap files in a temp folder with an absolute directroy name (so swap files with the same names don't get overwritten.
-set dir=d://tmp//
+set dir=/tmp
 "Don't put cursor at start of the line unnecessarily (test)
 set nostartofline
 "Enhanced tab completion
 set wildmenu
 "Set working dir to main dir. Use %:p:h to get file dir.
-cd D:\
+" cd ~
 "Global search/replace by default
 set gdefault
 "Enter newlines without entering insert mode. Moves cursor to new line.
@@ -48,6 +105,12 @@ nmap <S-Enter> O<Esc>
 nmap <CR> o<Esc>
 """ Opens a file in the current directory.
 cabbr <expr> %% expand('%:p:h')
+"Allows copying to the clipboard for Macs.
+map <F2> :.w !pbcopy<CR><CR>
+"Allows pasting from clipboard for Macs.
+map <F3> :r !pbpaste<CR>
+"Prompt to save (if unsaved changes) when quitting.
+set confirm
 
 """
 " Indentation
@@ -75,6 +138,19 @@ set noautoindent smartindent
 """
 " Sets the file format to use unix line endings for new buffers, and read in either unix or dos files.
 set ffs=unix,dos
+
+"""
+" JsDoc
+"""
+let g:jsdoc_allow_input_prompt=1
+let g:jsdoc_input_description=1
+let g:jsdoc_enable_es6=1
+
+let g:jsdoc_user_defined_tags = {
+  \ '@author': 'Justin Hallquist',
+  \ '@date': strftime('%F')
+  \ }
+"}}}
 
 """
 " Functions
@@ -140,37 +216,53 @@ function! StripWhitespace()
 endfunction
 
 function! ApplySyntaxSettings()
-  syntax enable
 endfunction
 
-" Things to do when the file is read
-function! OnBufRead()
-  " Change the newlines to Unix style.
-  call UnixNewlines()
-  " Enable syntax highlighting.
-  "call ApplySyntaxSettings()
-endfunction
+"""
+" ESLint
+"""
+let g:ale_linters = {
+\  'javascript': ['eslint'],
+\}
 
-" Wrapper function for all replace functions that need to be executed on legacy code.
-function! ReplaceStuff()
+let g:ale_fixers = {
+\  'javascript': ['eslint'],
+\}
 
-  call ReplaceQuoteParam(0, 'FOO')
-  call ReplaceQuoteParam(1, 'BAR')
+let g:ale_sign_column_always = 1
+let g:ale_fix_on_save = 1
+let g:airline#extensions#ale#enabled = 1
 
-  call ReplaceWfrequestParam(0, 'FOO')
-  call ReplaceWfrequestParam(1, 'BAR')
+nmap <silent> <C-k> <Plug>(ale_previous_wrap)
+nmap <silent> <C-j> <Plug>(ale_next_wrap)
 
-  " Removes the version tag.
-  exec '%s/TAG\n//ce'
+" """
+" " Folding
+" """
+" augroup javascript_folding
+"     au!
+"     au FileType javascript setlocal foldmethod=syntax
+" augroup END
 
-endfunction
+"""
+" Snippets
+"""
+autocmd FileType js UltiSnipsAddFiletypes javascript
+
+"""
+" Color Scheme
+"""
+syntax on
+colorscheme onedark
 
 """
 " On Open/Save
 """
-" Do things when the a file is read in.
-call ApplySyntaxSettings()
-
 " Do things when the file is written out.
 au BufWritePre * call Preserve("StripWhitespace")
-"au BufWritePre *.php call Preserve("ReplaceStuff")
+
+" Automatically sources .vimrc after saving it.
+autocmd! bufwritepost .vimrc source %
+
+" Automatically source .vimrc and runs BundleUpdate when saving vundle.vim.
+autocmd! bufwritepost vundle.vim source ~/.vimrc | BundleInstall
