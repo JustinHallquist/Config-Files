@@ -3,6 +3,10 @@
 """"""
 " Required for Vundle.
 set nocompatible
+
+" Required for fzf
+set rtp+=~/.vim/bundle/fzf
+
 " Separate file for Vundle packages
 source $HOME/.vim/vundle.vim
 
@@ -253,11 +257,41 @@ autocmd FileType js UltiSnipsAddFiletypes javascript
 " Color Scheme
 """
 syntax on
-colorscheme onedark
+color dracula
+
+"""
+" FZF
+"""
+nnoremap <C-p> :GFiles<Cr>
+nnoremap <C-g> :Rg<Cr>
+
+"""
+" Auto CTag
+"""
+set tags+=.git/tags;/
+au BufWritePost *.php silent! !eval '[ -f ".git/hooks/ctags" ] && .git/hooks/ctags > /dev/null 2>&1' &
+
+"""
+" Neomake
+"""
+" When writing a buffer (no delay).
+call neomake#configure#automake('w')
+" When writing a buffer (no delay), and on normal mode changes (after 750ms).
+call neomake#configure#automake('nw', 750)
+" When reading a buffer (after 1s), and when writing (no delay).
+call neomake#configure#automake('rw', 1000)
+" Full config: when writing or reading a buffer, and on changes in insert and
+" normal mode (after 1s; no delay when writing).
+call neomake#configure#automake('nrwi', 500)
 
 """
 " On Open/Save
 """
+" Run Prettier
+let g:prettier#exec_cmd_path='/home/jhallquist/.nvm/versions/node/v12.10.0/bin/prettier'
+let g:prettier#autoformat=0
+autocmd BufWritePre *.js,*.jsx,*.mjs,*.ts,*.tsx,*.css,*.less,*.scss,*.json,*.graphql,*.md,*.vue,*.yaml,*.html PrettierAsync
+
 " Do things when the file is written out.
 au BufWritePre * call Preserve("StripWhitespace")
 
